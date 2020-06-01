@@ -26,6 +26,13 @@ pd.set_option('display.max_colwidth', 150)
 data_path = '/data/workspace/kimi/tencent_ads/2020/dataset'
 preprocess_path = 'preprocess'
 
+def get_model_fromcsv(path):
+    model_df = pd.read_csv(path,sep=' ',header=None)
+    print(model_df.dtypes)
+    dic={}
+    for row in model_df.values:
+        dic[row[0]] = np.array(row[1:])
+    return dic
 
 # %%
 total_final = 'total_final.pkl'
@@ -43,6 +50,7 @@ valid_df = valid_df[valid_df.user_id < 2000000]
 topN = 3
 
 
+
 # %%
 
 def forfor(a):
@@ -50,9 +58,10 @@ def forfor(a):
 
 def w2v(log,pivot,f,flag,L,model_path,topN=3):
     #训练Word2Vec模型
-    model = Word2Vec.load(model_path+ f'_{L}')
-    print(model)
-
+    #model = Word2Vec.load(model_path+ f'_{L}')
+    #print(model)
+    model = get_model_fromcsv(model_path+ f'_{L}')
+    #exit(0)
     is_first_user = True
     result=[]
     print('w2v mean seq...')
@@ -62,7 +71,12 @@ def w2v(log,pivot,f,flag,L,model_path,topN=3):
         for w in row[1]:
             c.update([w])
             try:
-                emb_vec =  model.wv[w]
+                if w == -1:
+                    word = '\\N'
+                else:
+                    word = str(w)
+
+                emb_vec =  model[word]
             except Exception as e:
                 emb_vec = [0  for i in range(L)]
 
@@ -106,9 +120,9 @@ def w2v(log,pivot,f,flag,L,model_path,topN=3):
 
 
 featues = [
-            ('industry',16,'/data/workspace/kimi/tencent_ads/2020/kimi/industry_emb_model'),
-            ('product_id',32,'/data/workspace/kimi/tencent_ads/2020/kimi/product_id_emb_model'),
-            ('advertiser_id',32,'/data/workspace/kimi/tencent_ads/2020/kimi/advertiser_id_emb_model'),
+            ('industry',32,'/data/workspace/kimi/tencent_ads/2020/kimi/model/industry_id.model','industry_qindu'),
+            #('product_id',32,'/data/workspace/kimi/tencent_ads/2020/kimi/product_id_emb_model','product_id_kimi'),
+            #('advertiser_id',32,'/data/workspace/kimi/tencent_ads/2020/kimi/advertiser_id_emb_model','advertiser_id_kimi'),
           ]
 dataset = [
     (train_df,featues,'train'),
@@ -116,10 +130,10 @@ dataset = [
  ]
 
 for user_df,featues,flag in dataset:
-    for f, size, model_path in featues:
+    for f, size, model_path ,name in featues:
         print(f'start flag:{flag}  f:{f}')
         ret_df =  w2v(user_df,'user_id',f,flag, size,model_path,topN=topN)
-        ret_name = f'{f}_top{topN}_l{size}_{flag}.pkl'
+        ret_name = f'{f}_top{topN}_l{size}_{flag}_{name}.pkl'
         ret_path = f'{preprocess_path}/{ret_name}'
         ret_df.to_pickle(ret_path)
         del ret_df
@@ -127,7 +141,6 @@ for user_df,featues,flag in dataset:
 
 
 
-def get_product_category(log):
 
 
 
@@ -164,29 +177,5 @@ def get_product_category(log):
 # # %%
 # advertiser_id_test_df   = w2v(valid_df,'user_id','advertiser_id','train',32,'/data/workspace/kimi/tencent_ads/2020/kimi/advertiser_id_emb_model')
 # print(advertiser_id_test_df)
-
-
-# # %%
-
-
-
-# # %%
-# label_test_df = pd.read_csv(f'{data_path}/train_preliminary/user.csv')
-
-
-# # %%
-
-# valid_df = valid_df.merge(label_df,on='user_id')
-# valid_df = valid_df.merge(industry_test_df,on='user_id')
-# valid_df = valid_df.merge(advertiser_id_test_df,on='user_id')
-# print(valid_df)
-# print(valid_df['age'].value_counts())
-# print(valid_df['gender'].value_counts())
-# valid_df.to_pickle("valid5.pkl")
-
-
-
-# # %%
-
 
 

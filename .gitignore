@@ -1,5 +1,5 @@
 *.pkl
-preprocess/*.pkl
+preprocess/*
 *.csv
 *.npy
 *.txt
@@ -8,3 +8,4 @@ deepwalk_*
 industry_emb*
 product_id_emb*
 nohup.out
+model/*
