@@ -112,7 +112,6 @@ class TransformerBlock(layers.Layer):
         return self.layernorm2(out1 + ffn_output)
 
 
-# %%
 class TokenAndPositionEmbedding(layers.Layer):
     def __init__(self, maxlen, vocab_size, emded_dim,embedding_matrix=None):
         super(TokenAndPositionEmbedding, self).__init__()
@@ -135,6 +134,31 @@ class TokenAndPositionEmbedding(layers.Layer):
         return x + positions
 
 
+class SeqTransform(layers.Layer):
+    def __init__(self, maxlen, vocab_size, emded_dim,embedding_matrix=None,num_heads=2,ff_dim=32,output_dim=20):
+        super(SeqTransform, self).__init__()
+        self.embedding_layer = TokenAndPositionEmbedding(maxlen, vocab_size, embed_dim,embedding_matrix)
+        self.transformer_block =  TransformerBlock(embed_dim, num_heads, ff_dim)
+        self.output_dense = layers.Dense(output_dim, activation="relu")
+
+    def call(self, x):
+        x_seq = self.embedding_layer(x)
+        x_seq = self.transformer_block(x_seq)
+        x_seq = layers.GlobalAveragePooling1D()(x_seq)
+        x_seq = layers.Dropout(0.1)(x_seq)
+        x_seq = self.output_dense(x_seq)
+        return x_seq
+
+def get_seq_model(maxlen, vocab_size, emded_dim,embedding_matrix=None,num_heads=2,ff_dim=32,output_dim=20):
+    seq_inputs = layers.Input(shape=(maxlen,))
+    seq_layer =  SeqTransform(maxlen,vocab_size,embed_dim,embedding_matrix=embedding_matrix,num_heads=num_heads,ff_dim=ff_dim)
+    seq= seq_layer(seq_inputs)
+
+    model  = keras.Model(inputs=seq_inputs, outputs=seq)
+    return model, seq_inputs
+
+
+
 user_base_statics_df= pd.read_pickle(f'{preprocess_path}/train_user_base_statics.pkl')
 user_base_statics_df.columns = ['_'.join(i) for i in user_base_statics_df.columns.values]
 #label_df = pd.read_csv(f'{data_path}/train_preliminary/user.csv')
@@ -143,7 +167,6 @@ user_base_statics_df['click_times_count_log'] = user_base_statics_df['click_time
 user_base_statics_df = user_base_statics_df.drop(['click_times_sum','click_times_count'],axis=1)
 user_base_statics_df = user_base_statics_df.astype(float).reset_index()
 print(user_base_statics_df)
-
 
 
 
@@ -185,7 +208,6 @@ for i in range(len(vocab_list)):
 print(embedding_matrix.shape)
 
 
-# %%
 result=[]
 hit=0
 miss=0
@@ -201,7 +223,6 @@ int_seq_df  = pd.DataFrame(result,columns=['user_id','ad_id_int_seq'])
 print(int_seq_df)
 
 
-# %%
 train_df  = int_seq_df[int_seq_df.user_id <=720000]
 valid_df = int_seq_df[int_seq_df.user_id > 720000]
 print(train_df)
@@ -217,8 +238,8 @@ train_y = train_df[['age']].values
 valid_x = np.array(valid_df[['ad_id_int_seq']].values[:,0])
 valid_y = valid_df[['age']].values
 
-train_statics_df =  user_base_statics_df[user_base_statics_df.user_id<= 720000]
-valid_statics_df =  user_base_statics_df[user_base_statics_df.user_id > 720000]
+train_statics_df =  user_base_statics_df[user_base_statics_df.user_id<= 720000].drop(['user_id'],axis=1)
+valid_statics_df =  user_base_statics_df[user_base_statics_df.user_id > 720000].drop(['user_id'],axis=1)
 print(valid_statics_df)
 
 before_one_hot =  train_y.reshape([-1,1])
@@ -243,58 +264,27 @@ train_x = keras.preprocessing.sequence.pad_sequences(train_x, maxlen=maxlen)
 valid_x = keras.preprocessing.sequence.pad_sequences(valid_x, maxlen=maxlen)
 print(train_x)
 
-
-# %%
-
 embed_dim = 64  # Embedding size for each token
 num_heads = 2  # Number of attention heads
 ff_dim = 64  # Hidden layer size in feed forward network inside transformer
 vocab_size= 3027361
 statics_features_size = 7
 
+ad_id_seq_model,ad_id_seq_inputs = get_seq_model(maxlen,vocab_size,embed_dim,embedding_matrix=embedding_matrix,num_heads=num_heads,ff_dim=ff_dim)
 
-inputs_seq = layers.Input(shape=(maxlen,))
-embedding_layer = TokenAndPositionEmbedding(maxlen, vocab_size, embed_dim,embedding_matrix)
-x_seq = embedding_layer(inputs_seq)
-transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
-x_seq = transformer_block(x_seq)
-x_seq = layers.GlobalAveragePooling1D()(x_seq)
-x_seq = layers.Dropout(0.1)(x_seq)
-x_seq = layers.Dense(32, activation="relu")(x_seq)
+statics_inputs = layers.Input(shape=(statics_features_size,))
+combined = layers.concatenate([ad_id_seq_model.output, statics_inputs])
 
-x_seq_mode  = keras.Model(inputs=inputs_seq, outputs=x_seq)
-
-inputs_statics = layers.Input(shape=(statics_features_size,))
-combined = concatenate([x_seq_mode.output, inputs_statics])
-
-z = Dense(64, activation="relu")(combined)
-z = Dense(32, activation="relu")(z)
+z = layers.Dense(32, activation="relu")(combined)
 
 outputs = layers.Dense(10, activation="softmax")(z)
-model = keras.Model(inputs=inputs, outputs=outputs)
-
+model = keras.Model(inputs=[ad_id_seq_inputs,statics_inputs], outputs=outputs)
 
 model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.summary()
 
 print(train_x.shape)
-print(one_hoted_train_y)
 print(valid_x.shape)
-print(one_hoted_valid_y)
-
-mc= keras.callbacks.ModelCheckpoint(
-    './model/transform_checkpoint.hdf5',
-    monitor='val_acc',
-    verbose=0,
-    save_best_only=True,
-    save_weights_only=False,
-    mode='auto',
-    save_freq=100
-)
-tfb =  keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=32, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq=1000)
-
-
-callbacks = [mc]
 
 model.fit([train_x,train_statics_df],
          one_hoted_train_y, 
