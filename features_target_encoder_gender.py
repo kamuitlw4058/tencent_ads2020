@@ -40,9 +40,7 @@ def get_kflod_targe_encoder(train_df_,valid_df_):
     t_df = train_df_
     v_df = valid_df_
 
-    for feat in ['product_id','product_category','advertiser_id','industry']:
-    #for feat in ['product_category']:
-
+    for feat in ['creative_id','ad_id', 'product_id','advertiser_id','industry','product_category']:
             nums_columns = [f'gender{i}' for i in range(2)]
             for f in nums_columns:
                 colname1 = feat + '_' + f + '_kfold_mean'

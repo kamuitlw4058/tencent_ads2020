@@ -28,7 +28,7 @@ preprocess_path = 'preprocess'
 
 
 
-name = 'ad_id'
+name = 'creative_id'
 features =[f'{name}_age{i}_kfold_mean'  for i in range(10) ]
 agg_dict = dict(zip(features,[ ['min','max','mean','std'] for i in range(10) ]))
 print(agg_dict)

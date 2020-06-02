@@ -27,38 +27,20 @@ data_path = '/data/workspace/kimi/tencent_ads/2020/dataset'
 preprocess_path = 'preprocess'
 
 
-t1_df =  pd.read_pickle(f'{preprocess_path}/train_target_encoder_v1.pkl' )
-v1_df =  pd.read_pickle(f'{preprocess_path}/valid_target_encoder_v1.pkl' )
-test_df = pd.read_pickle(f'{preprocess_path}/test_merged.pkl' )
 
+label_name = 'gender'
+lable_class = 2
 
-
-print(t1_df)
-print(v1_df)
-
-agg_features = 'industry'
-#for feat in ['product_id','product_category','advertiser_id','industry']:
-featues = ['user_id'] + [f'age{i}'  for i in range(10) ] + [agg_features]
-
-t1_df = t1_df[featues]
-v1_df = v1_df[featues]
-
-label_features = ['user_id'] + [agg_features]
-test_df = test_df[label_features]
-
-
-
-def get_kflod_targe_encoder(train_df_,valid_df_,test_df_):
+def get_kflod_targe_encoder(train_df_,test_df_):
     folds = KFold(n_splits=5, shuffle=True, random_state=2020)
     kfold_features1 = []
     t_df = train_df_
-    v_df = valid_df_
     test_df = test_df_
 
     #for feat in ['product_id','product_category','advertiser_id','industry']:
     for feat in [agg_features]:
 
-            nums_columns = [f'age{i}' for i in range(10)]
+            nums_columns = [f'{label_name}{i}' for i in range(lable_class)]
             for f in nums_columns:
                 colname1 = feat + '_' + f + '_kfold_mean'
                 print(feat,f,' mean/median...')
@@ -71,14 +53,37 @@ def get_kflod_targe_encoder(train_df_,valid_df_,test_df_):
                 gc.collect()
 
                 print(test_df)
-    return t_df,v_df,test_df,kfold_features1
+    return t_df,test_df,kfold_features1
 
 
-train_df,valid_df,test_df,kfold_features  = get_kflod_targe_encoder(t1_df,v1_df,test_df)
+
+t1_df =  pd.read_pickle(f'{preprocess_path}/train_target_encoder_gender_v1.pkl' )
+test_df = pd.read_pickle(f'{preprocess_path}/test_merged_log.pkl' )
+
+print(t1_df)
 print(test_df)
 
-test_df =test_df[['user_id'] +kfold_features]
-test_df.to_pickle(f'{preprocess_path}/test_target_encoder_{agg_features}.pkl')
+
+#for i in ['ad_id']:
+for i in ['creative_id','ad_id', 'product_id','advertiser_id','industry','product_category']:
+#for i in ['ad_id', 'product_id','advertiser_id','industry']:
+    print(f"start {i}...")
+    agg_features = i
+    #for feat in ['product_id','product_category','advertiser_id','industry']:
+    featues = ['user_id','fold'] + [f'{label_name}{i}'  for i in range(lable_class) ] + [agg_features]
+
+    t2_df = t1_df[featues]
+
+    test_features = ['user_id'] + [agg_features]
+    test1_df = test_df[test_features]
+
+    train_df,test1_df,kfold_features  = get_kflod_targe_encoder(t2_df,test1_df)
+    print(test_df)
+
+    test1_df =test1_df[['user_id'] +kfold_features]
+    test1_df = test1_df.fillna(0)
+    test1_df.to_pickle(f'{preprocess_path}/test_target_encoder_{agg_features}_{label_name}.pkl')
+    gc.collect()
 
 
 

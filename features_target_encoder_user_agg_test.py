@@ -29,7 +29,8 @@ preprocess_path = 'preprocess'
 label_name ='gender'
 label_class =2
 
-for name in ['product_id','product_category','advertiser_id','industry']:
+for name in ['ad_id']:
+#for name in ['creative_id', 'ad_id','product_id','product_category','advertiser_id','industry']:
     flag ='test'
     features =[f'{name}_{label_name}{i}_kfold_mean'  for i in range(label_class) ]
     agg_dict = dict(zip(features,[ ['min','max','mean','std'] for i in range(label_class) ]))

@@ -29,11 +29,10 @@ preprocess_path = 'preprocess'
 
 
 name = 'gender'
-columns = ['']
 train_log_df =  pd.read_pickle(f'{preprocess_path}/train_target_encoder_{name}.pkl').astype(float).fillna(0)
 valid_log_df =  pd.read_pickle(f'{preprocess_path}/valid_target_encoder_{name}.pkl').astype(float).fillna(0)
 features = []
-for feat in ['product_id','product_category','advertiser_id','industry']:
+for feat in ['creative_id', 'product_id','product_category','advertiser_id','industry']:
     f =[f'{feat}_gender{i}_kfold_mean'  for i in range(2) ]
     features = features + f
 

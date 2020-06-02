@@ -26,8 +26,8 @@ data_path = '/data/workspace/kimi/tencent_ads/2020/dataset'
 preprocess_path = 'preprocess'
 
 name = 'creative_id'
-label_name ='age'
-label_class = 10
+label_name ='gender'
+label_class = 2
 t1_df =  pd.read_pickle(f'{preprocess_path}/train_target_encoder_v1.pkl' )
 v1_df =  pd.read_pickle(f'{preprocess_path}/valid_target_encoder_v1.pkl' )
 
@@ -79,21 +79,21 @@ print(train_df)
 print(valid_df)
 
 train_df =train_df[['user_id'] +kfold_features].fillna(0)
-# train_df.to_pickle(f'{preprocess_path}/train_target_encoder_{name}.pkl')
+train_df.to_pickle(f'{preprocess_path}/train_target_encoder_{name}.pkl')
 
 valid_df =valid_df[['user_id'] +kfold_features].fillna(0)
-# valid_df.to_pickle(f'{preprocess_path}/valid_target_encoder_{name}.pkl')
+valid_df.to_pickle(f'{preprocess_path}/valid_target_encoder_{name}.pkl')
 
-features =[f'{name}_age{i}_kfold_mean'  for i in range(10) ]
-agg_dict = dict(zip(features,[ ['min','max','mean','std'] for i in range(10) ]))
-print(agg_dict)
+#features =[f'{name}_age{i}_kfold_mean'  for i in range(10) ]
+#agg_dict = dict(zip(features,[ ['min','max','mean','std'] for i in range(10) ]))
+#print(agg_dict)
 
-train_df = train_df.groupby('user_id').agg(agg_dict)
-valid_df = train_df.groupby('user_id').agg(agg_dict)
-print(train_df)
-print(valid_df)
-train_df.to_pickle(f'{preprocess_path}/train_user_target_encoder_{name}_{label_name}.pkl')
-valid_df.to_pickle(f'{preprocess_path}/valid_user_target_encoder_{name}_{label_name}.pkl')
+#train_df = train_df.groupby('user_id').agg(agg_dict)
+#valid_df = train_df.groupby('user_id').agg(agg_dict)
+#print(train_df)
+#print(valid_df)
+#train_df.to_pickle(f'{preprocess_path}/train_user_target_encoder_{name}_{label_name}.pkl')
+#valid_df.to_pickle(f'{preprocess_path}/valid_user_target_encoder_{name}_{label_name}.pkl')
 
 
 
