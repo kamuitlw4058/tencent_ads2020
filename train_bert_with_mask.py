@@ -377,6 +377,7 @@ num_heads = 5  # Number of attention heads
 ff_dim = 128  # Hidden layer size in feed forward network inside transformer
 window = 15
 
+
 train_x_list = []
 valid_x_list = []
 vocab_size_list = []
