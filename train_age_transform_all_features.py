@@ -64,7 +64,7 @@ class MultiHeadSelfAttention(layers.Layer):
     def separate_heads(self, x, batch_size):
        x = tf.reshape(x, (batch_size, -1, self.num_heads, self.projection_dim))
        return tf.transpose(x, perm=[0, 2, 1, 3])
-    
+
     def get_config(self):
 
         config = super().get_config().copy()
@@ -151,8 +151,8 @@ class TokenAndPositionEmbedding(layers.Layer):
             embedding_mat = np.load(embeding_path)
         else:
             np.save(embeding_path,embedding_mat)
-            
-        self.token_emb = layers.Embedding(input_dim=vocab_size, 
+
+        self.token_emb = layers.Embedding(input_dim=vocab_size,
                                             embeddings_initializer=keras.initializers.Constant(embedding_mat),
                                             output_dim=embed_dim,
                                             trainable=False
@@ -160,7 +160,7 @@ class TokenAndPositionEmbedding(layers.Layer):
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
     def call(self, x):
- 
+
         emb = self.token_emb(x)
         if self.has_position:
             maxlen = tf.shape(x)[-1]
@@ -196,7 +196,7 @@ def get_seq_data(f,maxlen,L=64):
     seq_df = pd.read_pickle(f'{preprocess_path}/{f}_s64_total_seq.pkl').sort_values(by='user_id')
     seq_df = seq_df[seq_df.user_id < 1000000]
 
-    emb_model = Word2Vec.load(f'model/{f}_emb.model_{L}')
+    emb_model = Word2Vec.load(f'model/{f}_clk_emb.model_{L}')
     print(emb_model)
 
     vocab_list = [word for word, Vocab in emb_model.wv.vocab.items()]# 存储 所有的 词语
@@ -243,7 +243,7 @@ def get_seq_data(f,maxlen,L=64):
     print(f"end pad seq")
     return train_values, valid_values , embedding_mat,len(vocab_list) + 1
 
-maxlen = 100
+maxlen = 150
 
 
 user_base_statics_df= pd.read_pickle(f'{preprocess_path}/train_user_base_statics.pkl')
@@ -323,7 +323,7 @@ for i in ['time', 'creative_id', 'ad_id','product_id','advertiser_id','product_c
 
 train_x_list.append(train_statics_df)
 valid_x_list.append(valid_statics_df)
-    
+
 statics_inputs = layers.Input(shape=(statics_features_size,))
 
 transformer_block =  TransformerBlock(embed_dim * len(seq_output_list) , num_heads, ff_dim * len(seq_output_list) )
@@ -335,19 +335,19 @@ if len(seq_output_list) > 0:
 else:
     x = transformer_block(seq_output_list[0])
 
-x = transformer_block2(x)
+#x = transformer_block2(x)
 #x = transformer_block3(x)
 x = layers.GlobalAveragePooling1D()(x)
 
+x = layers.Dense(256, activation="relu")(x)
+x = layers.Dropout(0.1)(x)
+x = layers.Dense(128, activation="relu")(x)
+x = layers.Dropout(0.1)(x)
+x = layers.Dense(64, activation="relu")(x)
+
 combined = layers.concatenate( [x,statics_inputs])
+outputs = layers.Dense(10, activation="softmax")(combined)
 
-y = layers.Dense(256, activation="relu")(combined)
-y = layers.Dropout(0.1)(y)
-y = layers.Dense(128, activation="relu")(y)
-y = layers.Dropout(0.1)(y)
-y = layers.Dense(64, activation="relu")(y)
-
-outputs = layers.Dense(10, activation="softmax")(y)
 model = keras.Model(inputs= seq_input_list + [statics_inputs], outputs=outputs)
 
 model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
@@ -357,26 +357,23 @@ print(train_x.shape)
 print(valid_x.shape)
 
 mc =keras.callbacks.ModelCheckpoint(
-    f'model/transform_age_all_feat_checkpoint.h5',
+    f'model/transform_age_all_feat_weight_checkpoint.h5',
     monitor="val_accuracy",
-    verbose=0,
+    verbose=1,
     save_best_only=True,
-    save_weights_only=False,
+    save_weights_only=True,
     mode="auto",
     save_freq="epoch"
 )
 
 model.fit(train_x_list,
-         one_hoted_train_y, 
+         one_hoted_train_y,
         validation_data=(valid_x_list,one_hoted_valid_y),
         #validation_steps=10,
         callbacks=[mc],
         shuffle=True,
-        epochs=30)
+        epochs=100)
 
-model.save('model/transform_age_all_feat_end.h5')
-
-
+model.save_weights('model/transform_age_all_feat_weight_end.h5')
 
 
-# %%

@@ -1,3 +1,3 @@
-killp _trans
+killp bert
 rm nohup.out
-nohup python train_age_transform_all_features.py&
+nohup python -u  $1 &
