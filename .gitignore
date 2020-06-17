@@ -10,3 +10,4 @@ product_id_emb*
 nohup.out
 model/*
 logs/*
+.vscode/settings.json
