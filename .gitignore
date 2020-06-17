@@ -1,0 +1,12 @@
+*.pkl
+preprocess/*
+*.csv
+*.npy
+*.txt
+advertiser*
+deepwalk_*
+industry_emb*
+product_id_emb*
+nohup.out
+model/*
+logs/*
