@@ -36,7 +36,7 @@ def get_merged_log(flag):
     return merged_df
 
 train_merged_log_df = get_merged_log('train')
-label_df = pd.read_csv(f'{data_path}/train_preliminary/user.csv')
+label_df = pd.read_csv(f'{data_path}/user.csv')
 # train_merged_log_df = train_merged_log_df.merge(label_df,on='user_id',how='left')
 
 test_merged_log_df = get_merged_log('test')
@@ -77,7 +77,7 @@ def get_word2vec(sentences,path, L=64,window=5,sg=1,negative=5,workers=10,iter=1
     print('Time to build vocab: {:.0f}min {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     # 3, 训练
     total_since = time.time()
-    
+
     learning_rate = 0.5
     step_size = (0.5 - 0.001) / iter
     pre_epoch_loss = 0
@@ -107,13 +107,13 @@ def get_word2vec(sentences,path, L=64,window=5,sg=1,negative=5,workers=10,iter=1
             print(f"Better model. Best loss: {best_loss}")
             model_word2vec.save(path)
             print(f"Model {path} save done!")
-            
+
         if i - last_opt_index > 3:
             print('model not opt break')
             break
-            
-    
-    
+
+
+
     time_elapsed = time.time() - total_since
     print('Time to train: {:.0f}min {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     return model_word2vec
@@ -122,8 +122,8 @@ def get_word2vec(sentences,path, L=64,window=5,sg=1,negative=5,workers=10,iter=1
 
 
 
-def deepwalk(log,f1,f2,flag,L,model_path,workers=40,negative=1,iter=20):
-    model_file_path = f'{model_path}/{f2}_{flag}_s{L}_w{i}_deepwalk_emb.model'
+def deepwalk(log,f1,f2,flag,L,model_path,workers=40,sg=1,negative=5,iter=20,window=10):
+    model_file_path = f'{model_path}/{f2}_{flag}_s{L}_w{window}_deepwalk_emb.model'
     #Deepwalk算法，
     print("deepwalk:",f1,f2)
     #构建图
@@ -146,9 +146,9 @@ def deepwalk(log,f1,f2,flag,L,model_path,workers=40,negative=1,iter=20):
     for key in dic:
         dic[key]=list(dic[key])
         dic_cont[key]=len(dic[key])
-    print("creating")     
+    print("creating")
     #构建路径
-    path_length=50        
+    path_length=50
     sentences=[]
     length=[]
     for key in dic:
@@ -168,7 +168,7 @@ def deepwalk(log,f1,f2,flag,L,model_path,workers=40,negative=1,iter=20):
     #训练Deepwalk模型
     print('training...')
     random.shuffle(sentences)
-    model = get_word2vec(sentences, model_file_path,L=L, window=10, workers=workers,sg=sg,negative=negative,iter=iter)
+    model = get_word2vec(sentences, model_file_path,L=L, window=window, workers=workers,sg=sg,negative=negative,iter=iter)
     print('outputing...')
         #输出
     values=set(log[f1].values)
@@ -186,7 +186,7 @@ def deepwalk(log,f1,f2,flag,L,model_path,workers=40,negative=1,iter=20):
         names.append(f1+'_'+ f2+'_'+names[0]+'_dw_emb_'+str(L)+'_'+str(i))
     out_df.columns = names
     print(out_df.head())
-    out_df.to_pickle(f'{preprocess_path}/' +f1+'_'+ f2+'_'+f1 +'_'+flag +'_deepwalk_'+str(L)+'.pkl') 
+    out_df.to_pickle(f'{preprocess_path}/' +f1+'_'+ f2+'_'+f1 +'_'+flag +'_deepwalk_'+str(L)+'.pkl')
     ########################
     values=set(log[f2].values)
     w2v=[]
@@ -205,11 +205,10 @@ def deepwalk(log,f1,f2,flag,L,model_path,workers=40,negative=1,iter=20):
     print(out_df.head())
     out_df.to_pickle(f'{preprocess_path}/' +f1+'_'+ f2+'_'+f2 +'_'+flag +'_deepwalk_'+str(L)+'.pkl')
 
-        
-# %%
-size=64
-window = [10]
-workers = 40
+
+size=128
+window = [15]
+workers = 6
 iter = 40
 flag = 'total'
 model_dir = f'model'
@@ -220,6 +219,4 @@ for w in window:
         print(f'start training window:{i} workers:{workers} iter:{iter}')
         deepwalk(total_merged_df,'user_id',i,flag,size,model_dir,window=w,iter=iter,workers=workers)
         gc.collect()
-
-
 

@@ -216,18 +216,17 @@ class EpochSaver(callbacks.CallbackAny2Vec):
         self.pre_epoch_loss = epoch_loss
         self.since = time.time()
 
-
-
-
 def get_emb_mat(f,L=64,window=5,flag='clk_ns_total'):
     emb_dic_path = f'model/{f}_{flag}_s{L}_w{window}_emb_dict.json'
     emb_mat_path = f'model/{f}_{flag}_s{L}_w{window}_emb_mat.npy'
+    emb_model_path = f'model/{f}_{flag}_s{L}_w{window}_emb.model'
+    print(emb_model_path)
     if os.path.exists(emb_dic_path) and os.path.exists(emb_mat_path):
         with open(emb_dic_path,'r') as load_f:
             word_index = json.load(load_f)
         embedding_mat = np.load(emb_mat_path)
     else:
-        emb_model = Word2Vec.load(f'model/{f}_{flag}_s{L}_w{window}_emb.model')
+        emb_model = Word2Vec.load(emb_model_path)
         print(emb_model)
         te_df = pd.read_pickle( f'preprocess/{f}_target_encode.pkl')
         #te_df = te_df.set_index(f)
@@ -266,13 +265,11 @@ def get_seq_model(f,maxlen, vocab_size, emded_dim,embedding_mat=None,num_heads=2
 
 
 
-
-
-def get_seq_data(seq_df,mask_seq_df,f,maxlen,L=128,flag='clk_ns_clk_times_total',dataset='train',window=8):
-    word_index,embedding_mat = get_emb_mat(f,L=L,window=window)
+def get_seq_data(seq_df,mask_seq_df,f,maxlen,L=192,flag='clk_times',dataset='train',window=8):
+    word_index,embedding_mat = get_emb_mat(f,L=L,window=window,flag=flag)
     seq_values_path =  f'preprocess/{dataset}_{f}_{flag}_maxlen{maxlen}_int_seq.npy'
     seq_mask_path = f'preprocess/mask_{f}_seq.npy'
-
+    print(seq_values_path)
     if os.path.exists(seq_values_path):
         seq_values = np.load(seq_values_path)
     else:
@@ -372,9 +369,9 @@ gender_one_hoted_train_y, gender_one_hoted_valid_y=  get_label(flag='gender')
 #####
 
 maxlen = 150
-embed_dim = 128  # Embedding size for each token
-num_heads = 5  # Number of attention heads
-ff_dim = 128  # Hidden layer size in feed forward network inside transformer
+embed_dim = 192  # Embedding size for each token
+num_heads = 4  # Number of attention heads
+ff_dim = embed_dim  # Hidden layer size in feed forward network inside transformer
 window = 15
 
 
@@ -394,7 +391,7 @@ for i in [ 'creative_id']:
     seq_df = seq_df[seq_df.user_id < 1000000]
     mask_seq_df = pd.read_pickle(f'{preprocess_path}/mask_{i}.pkl').sort_values(by='user_id')
     mask_seq_df = mask_seq_df[mask_seq_df.user_id < 1000000]
-    word_index,embedding_mat,seq_values,mask_seq_values = get_seq_data(seq_df,mask_seq_df,i,maxlen,window=window)
+    word_index,embedding_mat,seq_values,mask_seq_values = get_seq_data(seq_df,mask_seq_df,i,maxlen,window=window,L=embed_dim)
     train_x_list.append(seq_values[:720000])
     valid_x_list.append(seq_values[720000:])
     train_x_list.append(mask_seq_values[:720000])
@@ -489,6 +486,3 @@ print(ret_df)
 
 ret_df = ret_df.to_pickle(f'{preprocess_path}/bert_train_ret.pkl')
 
-
-
-# %%

@@ -28,26 +28,10 @@ pd.set_option('display.max_colwidth', 150)
 data_path = '/data/workspace/kimi/tencent_ads/2020/dataset'
 preprocess_path = 'preprocess'
 
-# def get_merged_log(flag):
-#     merged= f'{flag}_merged_log.pkl'
-#     merged_path = f'{preprocess_path}/{merged}'
-#     merged_df = pd.read_pickle(merged_path)
-#     print(merged_df)
-#     return merged_df
 
-# train_merged_log_df = get_merged_log('train')
-# test_merged_log_df = get_merged_log('test')
-# total_merged_df = pd.concat([train_merged_log_df,test_merged_log_df]).sort_values(by='time')
-# print(total_merged_df)
-
-# del train_merged_log_df
-# del test_merged_log_df
-# gc.collect()
-# total_merged_df.to_pickle(f'{preprocess_path}/total_merged_log.pkl')
-
-# print("start to read merged log")
+print("start to read merged log")
 total_merged_df = pd.read_pickle(f'{preprocess_path}/total_merged_log.pkl')
-# # %%
+# %%
 
 
 # %%
@@ -72,7 +56,7 @@ class EpochSaver(callbacks.CallbackAny2Vec):
             delta_precent = delta / self.pre_epoch_loss
         else:
             delta_precent = 0
-        print(f"Epoch {self.epoch},total loss:{cum_loss}  loss: {epoch_loss} loss delta precent:{delta_precent} time: {time_taken//60}min {round(time_taken%60,3)}s")
+        print(f"Epoch {self.epoch}, loss: {epoch_loss} loss delta precent:{delta_precent} time: {time_taken//60}min {round(time_taken%60,3)}s")
         if  self.save and self.best_loss > epoch_loss:
             self.best_loss = epoch_loss
             print(f"Better model. Best loss: {self.best_loss}")
@@ -81,7 +65,7 @@ class EpochSaver(callbacks.CallbackAny2Vec):
         self.pre_loss = cum_loss
         self.pre_epoch_loss = epoch_loss
         self.since = time.time()
-
+        
 def get_word2vec(sentences,path, L=64,window=5,sg=1,negative=5,workers=10,iter=10):
     vector_size=L
     model_word2vec = Word2Vec(min_count=1,
@@ -130,7 +114,7 @@ def get_word2vec(sentences,path, L=64,window=5,sg=1,negative=5,workers=10,iter=1
             model_word2vec.save(path)
             print(f"Model {path} save done!")
             
-        if i - last_opt_index > 10:
+        if i - last_opt_index > 5:
             print('model not opt break')
             break
             
@@ -141,10 +125,11 @@ def get_word2vec(sentences,path, L=64,window=5,sg=1,negative=5,workers=10,iter=1
     return model_word2vec
 
 
+
 # %%
 def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1,negative=5,workers=10,iter=10):
     print("w2v:",pivot,f,model_path)
-
+   
     #构造数据
 
     print('build data...')
@@ -156,7 +141,7 @@ def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1
             grouped_df =  log.groupby(['user_id', f]).agg({'click_times':'sum','time':'max'}).reset_index().sort_values(by=['user_id','click_times','time'],ascending=[True, False,True])
         else:
             grouped_df =  log.groupby(['user_id', f]).agg({'click_times':'sum'}).reset_index().sort_values(by=['user_id','click_times'],ascending=[True, False])
-
+            
         grouped_df.to_pickle(grouped_path)
     print(grouped_df)
 
@@ -172,7 +157,7 @@ def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1
                 dic[item[0]].append(int(item[1]))
             except:
                 dic[item[0]]=[int(item[1])]
-
+        
         ret = []
         for key in dic:
             ret.append([key,dic[key]])
@@ -181,7 +166,7 @@ def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1
         ret_df = pd.DataFrame(ret,columns=cols)
         ret_df.to_pickle(mask_path)
         del ret_df
-        del ret
+        del ret 
         gc.collect()
 
     ###
@@ -195,7 +180,7 @@ def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1
             dic[item[0]].append(str(int(item[1])))
         except:
             dic[item[0]]=[str(int(item[1]))]
-
+    
     for key in dic:
         sentence.append(dic[key])
     print(sentence[:5])
@@ -203,6 +188,8 @@ def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1
     gc.collect()
     print(len(sentence))
 
+
+    
     ##
     #训练Word2Vec模型
     #
@@ -232,14 +219,14 @@ def w2v(log,pivot,f,flag,L,model_path,seq_len=200,sentence_len=100,window=5,sg=1
             ret_df.to_pickle(output_seq_path)
 
 
-
+    
 
 
 # %%
-size=64
+size=128
 window = [15]
-workers = 40
-iter = 40
+workers = 30
+iter = 50
 flag = 'clk_ns_total'
 model_dir = f'model'
 
@@ -247,7 +234,7 @@ model_dir = f'model'
 #for i in ['time', 'creative_id', 'ad_id','product_id','advertiser_id','product_category','industry']:
 gc.collect()
 for w in window:
-    for i in [ 'creative_id']:
+    for i in [ 'product_id']:
         w2v(total_merged_df,'user_id',i,flag,size,model_dir,window=w,iter=iter,workers=workers)
         gc.collect()
 
