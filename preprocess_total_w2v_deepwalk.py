@@ -42,16 +42,6 @@ label_df = pd.read_csv(f'{data_path}/user.csv')
 
 test_merged_log_df = get_merged_log('test')
 total_merged_df = pd.concat([train_merged_log_df,test_merged_log_df]).sort_values(by='time')
-#print(total_merged_df)
-
-# del train_merged_log_df
-# del test_merged_log_df
-# gc.collect()
-# total_merged_df.to_pickle(f'{preprocess_path}/total_merged_log.pkl')
-
-# print("start to read merged log")
-#total_merged_df = pd.read_pickle(f'{preprocess_path}/total_merged_log.pkl')
-# # %%
 
 label_dic = {}
 
