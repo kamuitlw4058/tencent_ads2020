@@ -12,3 +12,4 @@ model/*
 logs/*
 .vscode/settings.json
 tencent_ads2020_workspace.code-workspace
+clear_up/preprocess_handler/.ipynb_checkpoints/*
