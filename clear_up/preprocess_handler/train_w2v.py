@@ -35,7 +35,10 @@ print(df)
 
 size = 64
 window = 15
-worker = 30
+workers = 10
+iter = 20
+negative = 5
+sg = 1
 flag='time'
 pivot = 'user_id'
 
@@ -51,13 +54,14 @@ for i in feat_list:
         seq_df_data = []
         for k,v in sentences_dic.items():
             seq_df_data.append([k,v])
-        seq_df = pd.DataFrame(seq_df_data,names=[pivot,seq_name])
+        seq_df = pd.DataFrame(seq_df_data,columns=[pivot,seq_name])
         seq_df.to_pickle(seq_path)
     else:
         seq_df =  pd.read_pickle(seq_path)
     print(seq_df)
 
-    model_path = f'{model_dir_path}/{i}_s{size}_w{window}.model'
-    print(model_path)
+    model_file_path = f'{model_dir_path}/{i}_s{size}_w{window}.model'
+    print(model_file_path)
+    model = word2vec(seq_df[[seq_name]].values, model_file_path,L=size, window=window, workers=workers,sg=sg,negative=negative,iter=iter,cache=False)
 
 
