@@ -60,8 +60,8 @@ for i in feat_list:
         seq_df =  pd.read_pickle(seq_path)
     print(seq_df)
 
+
     model_file_path = f'{model_dir_path}/{i}_s{size}_w{window}.model'
     print(model_file_path)
-    model = word2vec(seq_df[[seq_name]].values, model_file_path,L=size, window=window, workers=workers,sg=sg,negative=negative,iter=iter,cache=False)
-
+    model = word2vec(seq_df[seq_name].values, model_file_path,L=size, window=window, workers=workers,sg=sg,negative=negative,iter=iter,cache=False)
 
